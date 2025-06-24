@@ -61,4 +61,7 @@ Thumbs.db
 *.jpeg
 
 # Logs
-*.log 
+*.log
+
+# Project-specific files
+music_behavior_discoveries.md 
