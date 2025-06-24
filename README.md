@@ -11,6 +11,9 @@ Extracts Spotify-style features from audio files:
 - **Instrumentalness**: Instrumental vs vocal content (0-1)
 - **Acousticness**: Acoustic vs electronic sound (0-1)
 - **Speechiness**: Speech vs music content (0-1)
+- **Energy**: Intensity and activity level (0-1)
+- **Key**: Musical key (C, C#, D, etc.)
+- **Mode**: Major or minor mode
 
 Plus confidence scores for each feature.
 
@@ -77,6 +80,12 @@ Each analysis produces a single CSV file with the following data:
 - `instrumentalness`: How much instrumental vs vocal content (0 = mostly vocals, 1 = mostly instrumental)
 - `acousticness`: How acoustic vs electronic (0 = electronic, 1 = acoustic)
 - `speechiness`: How much speech vs music (0 = instrumental, 1 = spoken word)
+- `energy`: How intense and active the song is (0 = calm, 1 = very energetic)
+
+### Musical Structure
+
+- `key`: Musical key (C, C#, D, D#, E, F, F#, G, G#, A, A#, B, or Unknown)
+- `mode`: Musical mode (major, minor, or unknown)
 
 ### Confidence Scores (0-1 scale)
 
@@ -85,13 +94,16 @@ Each analysis produces a single CSV file with the following data:
 - `instrumentalness_confidence`: How reliable the instrumentalness score is
 - `acousticness_confidence`: How reliable the acousticness score is
 - `speechiness_confidence`: How reliable the speechiness score is
+- `energy_confidence`: How reliable the energy score is
+- `key_confidence`: How reliable the key detection is
+- `mode_confidence`: How reliable the mode detection is
 
 ### Example CSV Output:
 
 ```csv
-filepath,filename,valence,valence_confidence,danceability,danceability_confidence,instrumentalness,instrumentalness_confidence,acousticness,acousticness_confidence,speechiness,speechiness_confidence
-songs/rock/song1.mp3,song1.mp3,0.721,0.749,0.519,0.266,0.746,0.864,0.220,0.559,0.355,0.566
-songs/jazz/song2.mp3,song2.mp3,0.596,0.662,0.572,0.198,0.647,0.716,0.320,0.451,0.322,0.737
+filepath,filename,valence,valence_confidence,danceability,danceability_confidence,instrumentalness,instrumentalness_confidence,acousticness,acousticness_confidence,speechiness,speechiness_confidence,energy,energy_confidence,key,key_confidence,mode,mode_confidence
+songs/rock/song1.mp3,song1.mp3,0.721,0.749,0.519,0.266,0.746,0.864,0.220,0.559,0.355,0.566,0.5,0.5,C,0.95,major,0.95
+songs/jazz/song2.mp3,song2.mp3,0.596,0.662,0.572,0.198,0.647,0.716,0.320,0.451,0.322,0.737,C#,0.9,minor,0.9
 ```
 
 ## 🎯 Usage Examples

@@ -274,7 +274,7 @@ class EnhancedAudioFeatureExtractor:
     
     def extract_enhanced_speechiness(self, audio: np.ndarray) -> Tuple[float, float]:
         """
-        Extract speechiness using spectral and temporal characteristics.
+        Extract speechiness using vocal content analysis.
         
         Args:
             audio: Audio data
@@ -283,18 +283,15 @@ class EnhancedAudioFeatureExtractor:
             Tuple of (speechiness_score, confidence)
         """
         try:
-            # Zero crossing rate (speech has higher ZCR)
-            zcr = librosa.feature.zero_crossing_rate(audio)[0]
-            zcr_score = np.clip(np.mean(zcr) / 0.3, 0.0, 1.0)
-            
             # Spectral features
             spectral_centroid = librosa.feature.spectral_centroid(y=audio, sr=self.sample_rate)[0]
             spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=self.sample_rate)[0]
             
-            # MFCC features (speech has characteristic MFCC patterns)
-            mfcc = librosa.feature.mfcc(y=audio, sr=self.sample_rate, n_mfcc=13)
+            # Zero crossing rate (speech has higher ZCR than music)
+            zcr = librosa.feature.zero_crossing_rate(audio)[0]
+            zcr_score = np.clip(np.mean(zcr) / 0.3, 0.0, 1.0)
             
-            # Spectral flux (speech has more rapid spectral changes)
+            # Spectral flux (speech has more energy changes)
             spectral_flux = librosa.onset.onset_strength(y=audio, sr=self.sample_rate, hop_length=512)
             flux_score = np.clip(np.mean(spectral_flux) / 10.0, 0.0, 1.0)
             
@@ -318,6 +315,154 @@ class EnhancedAudioFeatureExtractor:
         except Exception as e:
             print(f"Error extracting speechiness: {e}")
             return 0.0, 0.0
+    
+    def extract_key_and_mode(self, audio: np.ndarray) -> Tuple[str, str, float, float]:
+        """
+        Extract musical key and mode using a rolling window and majority vote.
+        
+        Args:
+            audio: Audio data
+            
+        Returns:
+            Tuple of (key, mode, key_confidence, mode_confidence)
+        """
+        try:
+            # Parameters for rolling window
+            window_size = 15  # seconds
+            hop_size = 5      # seconds
+            sr = self.sample_rate
+            n_samples = len(audio)
+            window_length = int(window_size * sr)
+            hop_length = int(hop_size * sr)
+            
+            # Krumhansl-Kessler profiles for major and minor keys
+            major_profiles = [
+                [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],  # C
+                [2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29],  # C#
+                [2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66],  # D
+                [3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39],  # D#
+                [2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19],  # E
+                [5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52],  # F
+                [2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38, 4.09],  # F#
+                [4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33, 4.38],  # G
+                [4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48, 2.33],  # G#
+                [2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23, 3.48],  # A
+                [3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35, 2.23],  # A#
+                [2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88, 6.35],  # B
+            ]
+            minor_profiles = [
+                [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17],  # C
+                [3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34],  # C#
+                [3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69],  # D
+                [2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98],  # D#
+                [3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75],  # E
+                [4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54],  # F
+                [2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60, 3.53],  # F#
+                [3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38, 2.60],  # G
+                [2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52, 5.38],  # G#
+                [5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68, 3.52],  # A
+                [3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33, 2.68],  # A#
+                [2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17, 6.33],  # B
+            ]
+            key_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+            
+            segment_keys = []
+            segment_modes = []
+            segment_confidences = []
+            
+            for start in range(0, n_samples - window_length + 1, hop_length):
+                segment = audio[start:start+window_length]
+                chroma = librosa.feature.chroma_cqt(y=segment, sr=sr, hop_length=512)
+                chroma_mean = np.mean(chroma, axis=1)
+                chroma_norm = chroma_mean / np.sum(chroma_mean)
+                best_corr = -1
+                best_key = None
+                best_mode = None
+                for i, key in enumerate(key_names):
+                    # Major
+                    major_profile = np.array(major_profiles[i]) / np.sum(major_profiles[i])
+                    major_corr = np.corrcoef(chroma_norm, major_profile)[0, 1]
+                    if not np.isnan(major_corr) and major_corr > best_corr:
+                        best_corr = major_corr
+                        best_key = key
+                        best_mode = 'major'
+                    # Minor
+                    minor_profile = np.array(minor_profiles[i]) / np.sum(minor_profiles[i])
+                    minor_corr = np.corrcoef(chroma_norm, minor_profile)[0, 1]
+                    if not np.isnan(minor_corr) and minor_corr > best_corr:
+                        best_corr = minor_corr
+                        best_key = key
+                        best_mode = 'minor'
+                segment_keys.append(best_key)
+                segment_modes.append(best_mode)
+                segment_confidences.append(best_corr)
+            
+            # Majority vote
+            from collections import Counter
+            key_mode_pairs = list(zip(segment_keys, segment_modes))
+            if key_mode_pairs:
+                most_common, count = Counter(key_mode_pairs).most_common(1)[0]
+                maj_key, maj_mode = most_common
+                maj_conf = np.mean([c for (k, m), c in zip(key_mode_pairs, segment_confidences) if (k, m) == most_common])
+                return maj_key, maj_mode, float(maj_conf), float(maj_conf)
+            else:
+                return "Unknown", "unknown", 0.0, 0.0
+        except Exception as e:
+            print(f"Error extracting key and mode: {e}")
+            return "Unknown", "unknown", 0.0, 0.0
+    
+    def extract_enhanced_energy(self, audio: np.ndarray) -> Tuple[float, float]:
+        """
+        Extract energy using RMS and spectral analysis.
+        
+        Args:
+            audio: Audio data
+            
+        Returns:
+            Tuple of (energy_score, confidence)
+        """
+        try:
+            # RMS energy (root mean square)
+            rms = librosa.feature.rms(y=audio)[0]
+            rms_mean = np.mean(rms)
+            rms_score = np.clip(rms_mean / 0.5, 0.0, 1.0)  # Normalize to 0-1
+            
+            # Spectral centroid (brightness correlates with energy)
+            spectral_centroid = librosa.feature.spectral_centroid(y=audio, sr=self.sample_rate)[0]
+            centroid_score = np.clip(np.mean(spectral_centroid) / 4000.0, 0.0, 1.0)
+            
+            # Spectral rolloff (energy distribution)
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=self.sample_rate)[0]
+            rolloff_score = np.clip(np.mean(spectral_rolloff) / 8000.0, 0.0, 1.0)
+            
+            # Spectral bandwidth (energy spread)
+            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=self.sample_rate)[0]
+            bandwidth_score = np.clip(np.mean(spectral_bandwidth) / 2000.0, 0.0, 1.0)
+            
+            # Dynamic range (energy variation)
+            energy_std = np.std(rms)
+            dynamic_score = np.clip(energy_std / 0.3, 0.0, 1.0)
+            
+            # Combine scores with weights
+            energy_score = (
+                0.4 * rms_score +      # RMS energy (most important)
+                0.2 * centroid_score + # Brightness
+                0.2 * rolloff_score +  # Energy distribution
+                0.1 * bandwidth_score + # Energy spread
+                0.1 * dynamic_score    # Energy variation
+            )
+            
+            energy_score = np.clip(energy_score, 0.0, 1.0)
+            
+            # Confidence based on feature consistency
+            features = [rms_score, centroid_score, rolloff_score, bandwidth_score, dynamic_score]
+            confidence = 1.0 - np.clip(np.std(features), 0.0, 0.5) / 0.5
+            
+            return float(energy_score), float(confidence)
+            
+        except Exception as e:
+            print(f"Error extracting energy: {e}")
+            return 0.5, 0.0
     
     def extract_enhanced_features(self, file_path: str) -> Dict[str, any]:
         """
@@ -347,6 +492,12 @@ class EnhancedAudioFeatureExtractor:
         acousticness, acous_conf = self.extract_enhanced_acousticness(audio)
         speechiness, speech_conf = self.extract_enhanced_speechiness(audio)
         
+        # Extract key and mode
+        key, mode, key_conf, mode_conf = self.extract_key_and_mode(audio)
+        
+        # Extract energy
+        energy_score, energy_conf = self.extract_enhanced_energy(audio)
+        
         # Add features with confidence scores
         features.update({
             'valence': valence,
@@ -358,7 +509,13 @@ class EnhancedAudioFeatureExtractor:
             'acousticness': acousticness,
             'acousticness_confidence': acous_conf,
             'speechiness': speechiness,
-            'speechiness_confidence': speech_conf
+            'speechiness_confidence': speech_conf,
+            'key': key,
+            'key_confidence': key_conf,
+            'mode': mode,
+            'mode_confidence': mode_conf,
+            'energy': energy_score,
+            'energy_confidence': energy_conf
         })
         
         return features
