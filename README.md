@@ -16,7 +16,7 @@ A comprehensive Python module for extracting advanced audio features from local 
 ### 🔧 Technical Capabilities
 
 - **Multiprocessing Support**: Parallel processing for large audio collections
-- **Multiple Output Formats**: CSV, JSON, YAML
+- **CSV Output**: Clean, structured data output
 - **Confidence Scoring**: Quality metrics for each analysis
 - **Comprehensive Feature Set**: 40+ advanced audio features
 - **Python 3.13 Compatible**: No dependency on TensorFlow or other problematic libraries
@@ -48,45 +48,74 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```python
-from audio_features_advanced import AdvancedAudioAnalyzer
+from audio_features_simple import AudioFeatureExtractor
 
-# Initialize analyzer
-analyzer = AdvancedAudioAnalyzer()
+# Initialize extractor
+extractor = AudioFeatureExtractor()
 
 # Analyze a folder of audio files
-df = analyzer.analyze_folder('path/to/audio/files', output_file='results.csv')
+df = extractor.process_directory('path/to/audio/files', output_file='results.csv')
+```
+
+### Enhanced Usage
+
+```python
+from audio_features_enhanced import EnhancedAudioFeatureExtractor
+
+# Initialize enhanced extractor
+enhanced_extractor = EnhancedAudioFeatureExtractor()
+
+# Process existing features and add enhanced analysis
+df = enhanced_extractor.process_existing_features(
+    features_csv='basic_features.csv',
+    output_file='enhanced_results.csv'
+)
+```
+
+### Advanced Usage
+
+```python
+from audio_features_advanced import AdvancedAudioAnalyzer
+
+# Initialize advanced analyzer
+analyzer = AdvancedAudioAnalyzer()
+
+# Analyze a folder with advanced features
+df = analyzer.analyze_folder('path/to/audio/files', output_file='advanced_results.csv')
 ```
 
 ### Command Line Usage
 
 ```bash
-# Analyze a folder with default settings
-python audio_features_advanced.py music_samples
+# Simple analysis
+python analyze_audio.py
 
-# Specify output format and file
-python audio_features_advanced.py music_samples --output my_results.json --format json
+# Enhanced analysis
+python analyze_audio_enhanced.py
 
-# Disable multiprocessing for debugging
-python audio_features_advanced.py music_samples --no-multiprocessing
-
-# Use specific number of parallel jobs
-python audio_features_advanced.py music_samples --jobs 4
-```
-
-### Advanced Example
-
-Run the comprehensive example with visualizations:
-
-```bash
+# Run examples
+python example.py
 python example_advanced.py
 ```
 
-This will:
+### Example Scripts
+
+Run the comprehensive examples:
+
+```bash
+# Basic example with detailed feature breakdown
+python example.py
+
+# Advanced example with confidence scores
+python example_advanced.py
+```
+
+These will:
 
 - Analyze all audio files in the `music_samples` folder
 - Display detailed feature breakdowns
-- Generate comprehensive visualizations
-- Create a summary report
+- Generate CSV output files
+- Create summary reports
 
 ## Feature Categories
 
@@ -142,50 +171,20 @@ This will:
 - **Acousticness**: Acoustic vs electronic sound (0-1)
 - **Speechiness**: Speech vs music content (0-1)
 
-## Output Formats
+## Output Format
 
 ### CSV Format
 
 Default format with all features in columns:
 
 ```csv
-filename,tempo,harmonic_ratio,valence,danceability,...
-Bohemian Rhapsody.mp3,143.6,0.762,1.000,1.000,...
-```
-
-### JSON Format
-
-Structured data with nested features:
-
-```json
-[
-  {
-    "filename": "Bohemian Rhapsody.mp3",
-    "rhythm_features": {
-      "tempo": 143.6,
-      "beat_strength": 3.485
-    },
-    "harmonic_features": {
-      "harmonic_ratio": 0.762
-    }
-  }
-]
-```
-
-### YAML Format
-
-Human-readable structured format:
-
-```yaml
-- filename: Bohemian Rhapsody.mp3
-  tempo: 143.6
-  harmonic_ratio: 0.762
-  valence: 1.000
+filename,tempo,harmonic_ratio,valence,danceability,instrumentalness,acousticness,speechiness,...
+Bohemian Rhapsody.mp3,143.6,0.762,0.779,0.406,0.691,0.442,0.220,...
 ```
 
 ## Confidence Scoring
 
-The analyzer provides confidence scores for different aspects:
+The analyzers provide confidence scores for different aspects:
 
 - **Harmonic Confidence**: Based on harmonic ratio
 - **Rhythm Confidence**: Based on rhythm regularity
@@ -203,36 +202,42 @@ The analyzer provides confidence scores for different aspects:
 ## Advanced Configuration
 
 ```python
-# Customize analyzer parameters
-analyzer = AdvancedAudioAnalyzer(
-    sample_rate=22050,    # Audio sample rate
-    hop_length=512,       # STFT hop length
-    n_mels=128,          # Number of mel bands
-    n_mfcc=20            # Number of MFCC coefficients
+# Customize extractor parameters
+extractor = AudioFeatureExtractor(
+    sample_rate=22050    # Audio sample rate
 )
 
-# Analyze with custom settings
-df = analyzer.analyze_folder(
-    folder_path='music_samples',
-    output_format='json',
-    output_file='custom_results.json',
-    use_multiprocessing=True,
-    n_jobs=4
+# Process with custom settings
+df = extractor.process_directory(
+    input_dir='music_samples',
+    output_file='custom_results.csv',
+    use_sqlite=False,
+    n_jobs=1
 )
 ```
 
-## Comparison with Other Modules
+## Module Comparison
 
-| Feature                | Basic | Enhanced | Advanced |
-| ---------------------- | ----- | -------- | -------- |
-| Basic Features         | ✅    | ✅       | ✅       |
-| Spotify-style Features | ❌    | ✅       | ✅       |
-| Harmonic Analysis      | ❌    | ❌       | ✅       |
-| Spectral Analysis      | Basic | Basic    | Advanced |
-| Rhythm Analysis        | Basic | Basic    | Advanced |
-| Confidence Scoring     | ❌    | ✅       | ✅       |
-| Multiprocessing        | ✅    | ✅       | ✅       |
-| Multiple Formats       | ✅    | ✅       | ✅       |
+| Feature                | Simple | Enhanced | Advanced |
+| ---------------------- | ------ | -------- | -------- |
+| Basic Features         | ✅     | ✅       | ✅       |
+| Spotify-style Features | ✅     | ✅       | ✅       |
+| Harmonic Analysis      | ❌     | ❌       | ✅       |
+| Spectral Analysis      | Basic  | Basic    | Advanced |
+| Rhythm Analysis        | Basic  | Basic    | Advanced |
+| Confidence Scoring     | ❌     | ✅       | ✅       |
+| Multiprocessing        | ✅     | ✅       | ✅       |
+| CSV Output             | ✅     | ✅       | ✅       |
+
+## Available Scripts
+
+- **`analyze_audio.py`**: Simple analysis with basic features
+- **`analyze_audio_enhanced.py`**: Two-step enhanced analysis
+- **`example.py`**: Basic example with detailed output
+- **`example_advanced.py`**: Advanced example with confidence scores
+- **`audio_features_simple.py`**: Core simple extractor
+- **`audio_features_enhanced.py`**: Enhanced feature extractor
+- **`audio_features_advanced.py`**: Advanced analyzer with harmonic analysis
 
 ## Troubleshooting
 
@@ -241,6 +246,7 @@ df = analyzer.analyze_folder(
 1. **No audio files found**: Ensure files have supported extensions (.mp3, .wav, .flac, .m4a, .ogg)
 2. **Memory errors**: Reduce `n_jobs` or disable multiprocessing
 3. **Import errors**: Ensure all dependencies are installed in virtual environment
+4. **Duplicate files**: The system automatically deduplicates files found by glob patterns
 
 ### Performance Tips
 
@@ -258,7 +264,7 @@ df = analyzer.analyze_folder(
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
