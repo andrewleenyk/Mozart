@@ -2,32 +2,42 @@
 """
 Simple Audio Analysis Script
 
-Just analyzes audio files and outputs CSV - no visualizations or detailed printing.
+This script provides a clean, simple interface for analyzing audio files
+and outputting results to CSV format only.
 """
 
-from audio_features_advanced import AdvancedAudioAnalyzer
-import sys
+from audio_features_enhanced import EnhancedAudioAnalyzer
 
 def main():
-    """Simple audio analysis with CSV output."""
-    if len(sys.argv) < 2:
-        print("Usage: python analyze_audio.py <folder_path> [output_file]")
-        sys.exit(1)
-    
-    folder_path = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "audio_features.csv"
+    """Analyze audio files and output to CSV."""
+    print("🎵 Audio Analysis - CSV Output Only")
+    print("=" * 40)
     
     # Initialize analyzer
-    analyzer = AdvancedAudioAnalyzer()
+    analyzer = EnhancedAudioAnalyzer()
     
-    # Analyze and save to CSV
-    df = analyzer.analyze_folder(folder_path, output_file=output_file)
+    # Analyze the music samples folder
+    print("\n📊 Analyzing audio files...")
+    df = analyzer.analyze_folder('music_samples', output_file='features_enhanced.csv')
     
-    if df is not None:
-        print(f"✅ Analysis complete! Results saved to {output_file}")
-        print(f"📊 Analyzed {len(df)} files")
-    else:
-        print("❌ Analysis failed")
+    if df is None or df.empty:
+        print("❌ No results to analyze")
+        return
+    
+    print(f"\n✅ Successfully analyzed {len(df)} files")
+    print(f"📄 Results saved to: features_enhanced.csv")
+    
+    # Show a quick summary
+    print("\n📋 Quick Summary:")
+    print("-" * 20)
+    for idx, row in df.iterrows():
+        print(f"🎼 {row['filename']}")
+        print(f"   Tempo: {row['tempo']:.1f} BPM")
+        print(f"   Valence: {row['valence']:.3f}")
+        print(f"   Danceability: {row['danceability']:.3f}")
+        print(f"   Duration: {row['duration']:.1f}s")
+    
+    print("\n✅ Analysis complete!")
 
 if __name__ == "__main__":
     main() 

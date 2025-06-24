@@ -52,10 +52,6 @@ setup(
             "flake8>=3.8",
             "mypy>=0.800",
         ],
-        "viz": [
-            "matplotlib>=3.5.0",
-            "seaborn>=0.11.0",
-        ],
     },
     entry_points={
         "console_scripts": [

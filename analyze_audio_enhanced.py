@@ -2,42 +2,45 @@
 """
 Enhanced Audio Analysis Script
 
-Uses advanced vocal detection and sophisticated analysis for more accurate
-instrumentalness, valence, and danceability detection.
+This script provides enhanced audio analysis capabilities
+with CSV output only - no visualizations.
 """
 
-from audio_features_enhanced_accurate import EnhancedAccurateAudioAnalyzer
-import sys
+from audio_features_enhanced import EnhancedAudioAnalyzer
 
 def main():
-    """Enhanced audio analysis with improved accuracy."""
-    if len(sys.argv) < 2:
-        print("Usage: python analyze_audio_enhanced.py <folder_path> [output_file]")
-        sys.exit(1)
+    """Analyze audio files with enhanced features and output to CSV."""
+    print("🎵 Enhanced Audio Analysis - CSV Output Only")
+    print("=" * 50)
     
-    folder_path = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "audio_features_enhanced.csv"
+    # Initialize analyzer
+    analyzer = EnhancedAudioAnalyzer()
     
-    # Initialize enhanced analyzer
-    analyzer = EnhancedAccurateAudioAnalyzer()
+    # Analyze the music samples folder
+    print("\n📊 Analyzing audio files with enhanced features...")
+    df = analyzer.analyze_folder('music_samples', output_file='features_enhanced.csv')
     
-    # Analyze and save to CSV
-    df = analyzer.analyze_folder(folder_path, output_file=output_file)
+    if df is None or df.empty:
+        print("❌ No results to analyze")
+        return
     
-    if df is not None:
-        print(f"✅ Enhanced analysis complete! Results saved to {output_file}")
-        print(f"📊 Analyzed {len(df)} files")
-        
-        # Show key improvements
-        for idx, row in df.iterrows():
-            print(f"\n🎵 {row['filename']}:")
-            print(f"   Instrumentalness: {row['instrumentalness']:.3f} (vocal prob: {row['vocal_probability']:.3f})")
-            print(f"   Valence: {row['valence']:.3f}")
-            print(f"   Danceability: {row['danceability']:.3f}")
-            print(f"   Tempo: {row['tempo']:.1f} BPM")
-            print(f"   Mode: {row['mode']} (confidence: {row['mode_confidence']:.3f})")
-    else:
-        print("❌ Analysis failed")
+    print(f"\n✅ Successfully analyzed {len(df)} files")
+    print(f"📄 Results saved to: features_enhanced.csv")
+    
+    # Show a quick summary
+    print("\n📋 Quick Summary:")
+    print("-" * 20)
+    for idx, row in df.iterrows():
+        print(f"🎼 {row['filename']}")
+        print(f"   Tempo: {row['tempo']:.1f} BPM")
+        print(f"   Valence: {row['valence']:.3f}")
+        print(f"   Danceability: {row['danceability']:.3f}")
+        print(f"   Instrumentalness: {row['instrumentalness']:.3f}")
+        print(f"   Acousticness: {row['acousticness']:.3f}")
+        print(f"   Speechiness: {row['speechiness']:.3f}")
+        print(f"   Duration: {row['duration']:.1f}s")
+    
+    print("\n✅ Enhanced analysis complete!")
 
 if __name__ == "__main__":
     main() 
