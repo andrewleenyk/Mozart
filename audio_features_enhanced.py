@@ -365,7 +365,7 @@ class EnhancedAudioFeatureExtractor:
     
     def process_existing_features(self, features_csv: str, output_file: str = None,
                                  use_sqlite: bool = False, db_path: str = None,
-                                 n_jobs: int = 1) -> pd.DataFrame:
+                                 n_jobs: int = 1, replace_basic: bool = True) -> pd.DataFrame:
         """
         Process existing features CSV and add high-level features.
         
@@ -375,6 +375,7 @@ class EnhancedAudioFeatureExtractor:
             use_sqlite: Whether to save to SQLite database
             db_path: Path to SQLite database
             n_jobs: Number of parallel jobs
+            replace_basic: If True, replace basic features with enhanced versions
             
         Returns:
             DataFrame with enhanced features
@@ -416,12 +417,34 @@ class EnhancedAudioFeatureExtractor:
         # Create enhanced features DataFrame
         enhanced_df = pd.DataFrame(results)
         
-        # Merge with existing features
-        merged_df = pd.merge(df, enhanced_df, on='filepath', how='left', suffixes=('', '_enhanced'))
-        
-        # Remove duplicate filename columns
-        if 'filename_enhanced' in merged_df.columns:
-            merged_df = merged_df.drop('filename_enhanced', axis=1)
+        if replace_basic:
+            # Remove basic features that will be replaced by enhanced versions
+            basic_features_to_replace = ['valence', 'danceability', 'instrumentalness', 'acousticness', 'speechiness']
+            for feature in basic_features_to_replace:
+                if feature in df.columns:
+                    df = df.drop(feature, axis=1)
+                    print(f"Removed basic {feature} feature (will use enhanced version)")
+            
+            # Also remove any existing confidence columns to avoid duplicates
+            confidence_columns_to_remove = ['valence_confidence', 'danceability_confidence', 'instrumentalness_confidence', 'acousticness_confidence', 'speechiness_confidence']
+            for col in confidence_columns_to_remove:
+                if col in df.columns:
+                    df = df.drop(col, axis=1)
+                    print(f"Removed existing {col} column (will use enhanced version)")
+            
+            # Merge enhanced features, replacing basic ones
+            merged_df = pd.merge(df, enhanced_df, on='filepath', how='left')
+            
+            # Remove duplicate filename columns
+            if 'filename_enhanced' in merged_df.columns:
+                merged_df = merged_df.drop('filename_enhanced', axis=1)
+        else:
+            # Keep both basic and enhanced features (original behavior)
+            merged_df = pd.merge(df, enhanced_df, on='filepath', how='left', suffixes=('', '_enhanced'))
+            
+            # Remove duplicate filename columns
+            if 'filename_enhanced' in merged_df.columns:
+                merged_df = merged_df.drop('filename_enhanced', axis=1)
         
         # Save results
         if output_file:
@@ -457,6 +480,7 @@ def main():
     parser.add_argument('--output', help='Output CSV file path (default: features_enhanced.csv)')
     parser.add_argument('--db', help='SQLite database path')
     parser.add_argument('--jobs', type=int, default=1, help='Number of parallel jobs')
+    parser.add_argument('--keep-basic', action='store_true', help='Keep basic features alongside enhanced ones (default: replace basic with enhanced)')
     
     args = parser.parse_args()
     
@@ -473,13 +497,14 @@ def main():
         output_file=args.output,
         use_sqlite=bool(args.db),
         db_path=args.db,
-        n_jobs=args.jobs
+        n_jobs=args.jobs,
+        replace_basic=not args.keep_basic
     )
     
     if not df.empty:
         print(f"\nEnhanced features for {len(df)} files")
         
-        # Show summary of new features
+        # Show summary of enhanced features
         enhanced_columns = ['valence', 'danceability', 'instrumentalness', 'acousticness', 'speechiness']
         available_columns = [col for col in enhanced_columns if col in df.columns]
         
@@ -491,6 +516,12 @@ def main():
         confidence_columns = [col for col in df.columns if 'confidence' in col]
         if confidence_columns:
             print(f"\nConfidence scores available for: {confidence_columns}")
+        
+        # Show which features were replaced if applicable
+        if not args.keep_basic:
+            print("\nNote: Basic features (valence, danceability, instrumentalness, acousticness, speechiness) were replaced with enhanced versions")
+        else:
+            print("\nNote: Both basic and enhanced features are included in the output")
 
 
 if __name__ == "__main__":
