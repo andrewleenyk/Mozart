@@ -6,7 +6,7 @@ This script provides a clean, simple interface for analyzing audio files
 and outputting results to CSV format only.
 """
 
-from audio_features_enhanced import EnhancedAudioAnalyzer
+from audio_features_simple import AudioFeatureExtractor
 
 def main():
     """Analyze audio files and output to CSV."""
@@ -14,18 +14,18 @@ def main():
     print("=" * 40)
     
     # Initialize analyzer
-    analyzer = EnhancedAudioAnalyzer()
+    analyzer = AudioFeatureExtractor()
     
     # Analyze the music samples folder
     print("\n📊 Analyzing audio files...")
-    df = analyzer.analyze_folder('music_samples', output_file='features_enhanced.csv')
+    df = analyzer.process_directory('music_samples', output_file='features_simple.csv')
     
     if df is None or df.empty:
         print("❌ No results to analyze")
         return
     
     print(f"\n✅ Successfully analyzed {len(df)} files")
-    print(f"📄 Results saved to: features_enhanced.csv")
+    print(f"📄 Results saved to: features_simple.csv")
     
     # Show a quick summary
     print("\n📋 Quick Summary:")

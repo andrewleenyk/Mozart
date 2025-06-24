@@ -383,6 +383,16 @@ class AudioFeatureExtractor:
             audio_files.extend(glob.glob(os.path.join(input_dir, ext)))
             audio_files.extend(glob.glob(os.path.join(input_dir, '**', ext), recursive=True))
         
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_audio_files = []
+        for file_path in audio_files:
+            if file_path not in seen:
+                seen.add(file_path)
+                unique_audio_files.append(file_path)
+        
+        audio_files = unique_audio_files
+        
         if not audio_files:
             print(f"No audio files found in {input_dir}")
             return pd.DataFrame()
