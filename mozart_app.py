@@ -16,7 +16,7 @@ import sys
 import glob
 import argparse
 from pathlib import Path
-from audio_features_enhanced import EnhancedAudioFeatureExtractor
+from src.analyzers.audio_features_enhanced import EnhancedAudioFeatureExtractor
 import pandas as pd
 
 class MozartApp:
